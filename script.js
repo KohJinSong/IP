@@ -54,6 +54,8 @@ if (timerDisplay && pauseBtn && timerIcon) {
     if (remaining <= 0 && !isPaused) {
       timerIcon.className = "timer-icon fa-solid fa-check";
       pauseBtn.title = "Complete!";
+
+      savePlantToForest();
     }
   }
 
@@ -182,18 +184,17 @@ const seasonCards = document.querySelectorAll(".season-card");
 
 if (seasonCards.length) {
   seasonCards.forEach(card => {
-    card.addEventListener("click", () => {
-      // remove selection from all
-      seasonCards.forEach(c => c.classList.remove("selected"));
-      // select this one
-      card.classList.add("selected");
-
-      // store choice for later pages
+  card.addEventListener("click", () => {
+    if (card.classList.contains("selected")) {
       const chosen = card.dataset.season;
       localStorage.setItem("chosenSeason", chosen);
-      // could also send to your API here
-    });
+      window.location.href = "focus_main.html";
+    } else {
+      seasonCards.forEach(c => c.classList.remove("selected"));
+      card.classList.add("selected");
+    }
   });
+});
 
   // restore previous choice if saved
   const savedSeason = localStorage.getItem("chosenSeason");
@@ -204,3 +205,162 @@ if (seasonCards.length) {
     if (savedCard) savedCard.classList.add("selected");
   }
 }
+
+
+
+// ------------------ Position selection page ------------------
+const placeGrid = document.getElementById("place-grid");
+const confirmBtn = document.getElementById("confirm-btn");
+let selectedIndex = null;
+
+if (placeGrid && confirmBtn) {
+  confirmBtn.disabled = true;
+  
+  for (let i = 0; i <= 15; i++) {
+    const slot = document.createElement("div");
+    slot.className = "grid-slot";
+    slot.dataset.place = i;
+    
+    slot.addEventListener("click", () => {
+      // Deselect all slots
+      document.querySelectorAll(".grid-slot").forEach(s => s.classList.remove("active"));
+      slot.classList.add("active");
+      
+      selectedIndex = i;
+      confirmBtn.disabled = false;
+      confirmBtn.style.background = "#c6eb7c";
+    });
+
+    placeGrid.appendChild(slot);
+  }
+
+  confirmBtn.addEventListener("click", () => {
+    if (selectedIndex !== null) {
+      console.log("Saving position:", selectedIndex);
+      localStorage.setItem("chosenPosition", selectedIndex);
+      window.location.href = "focus_timer.html";
+    }
+  });
+}
+
+function savePlantToForest() {
+  const finalPosition = localStorage.getItem('chosenPosition');
+  const finalPlant = localStorage.getItem('chosenPlant');
+  const finalSeason = localStorage.getItem('chosenSeason');
+
+  const payload = {
+    userId: "student-1",
+    plantType: finalPlant,
+    positionIndex: parseInt(finalPosition),
+    season: finalSeason,
+    timestamp: new Date().toISOString()
+  };
+
+    //send to RestDB
+    fetch("https://drsadrabbit-d6de.restdb.io/rest/ip-js-forest", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-apikey": "695ca6b37ba9c9d384784748",
+      },
+      body: JSON.stringify(payload)
+    }).then(() => {
+      window.location.href = "forest.html";
+    });
+}
+
+
+// --- Focus Main page START Button ---
+document.addEventListener("DOMContentLoaded", () => {
+    const startFocusBtn = document.getElementById("start-focus-btn");
+
+    if (startFocusBtn) {
+        console.log("Found Start Focus Button!"); 
+        startFocusBtn.addEventListener("click", (e) => {
+            e.preventDefault(); 
+            console.log("Redirecting to position page...");
+            window.location.href = "position.html";
+        });
+    } else {
+        console.warn("Start Focus Button NOT found on this page.");
+    }
+});
+
+// --- Friend garden ---
+const commonGrid = document.getElementById("common-grid");
+const startCommonBtn = document.getElementById("start-common-focus");
+
+let selectedCommonIndex = null; 
+
+if (commonGrid) {
+    // url friend name
+    const params = new URLSearchParams(window.location.search);
+    const friendName = params.get('friend') || "Friend";
+    
+    const gardenTitle = document.getElementById("garden-title");
+    if (gardenTitle) {
+        gardenTitle.innerText = `With ${friendName}`;
+    }
+
+    // 5x5 grid
+    for (let i = 0; i < 25; i++) {
+        const slot = document.createElement("div");
+        slot.className = "grid-slot-small";
+        slot.dataset.place = i; 
+        
+        slot.addEventListener("click", () => {
+            // cancel before highlight
+            document.querySelectorAll(".grid-slot-small").forEach(s => s.classList.remove("active"));
+            // highlight selected
+            slot.classList.add("active");
+            
+
+            selectedCommonIndex = i; 
+            
+            // activete start button
+            if (startCommonBtn) {
+                startCommonBtn.disabled = false;
+                startCommonBtn.style.background = "#c8f7a0"; 
+                startCommonBtn.style.color = "#40513B"; // 记得改文字颜色
+            }
+        });
+
+        commonGrid.appendChild(slot);
+    }
+
+    // Start common focus button
+    if (startCommonBtn) {
+        startCommonBtn.disabled = true; // start disabled
+        
+        startCommonBtn.addEventListener("click", () => {
+            if (selectedCommonIndex !== null) {
+                const params = new URLSearchParams(window.location.search);
+                const friendName = params.get('friend') || "Friend";
+                
+                console.log("Saving common position:", selectedCommonIndex);
+                
+                // save to localStorage
+                localStorage.setItem("chosenPosition", selectedCommonIndex);
+                
+                // common timer page
+                window.location.href = `common_timer.html?friend=${friendName}`;
+            } else {
+                alert("Please choose a spot in the garden first!");
+            }
+        });
+    }
+}
+
+// --- Common Timer Page Init ---
+document.addEventListener("DOMContentLoaded", () => {
+    const friendLabel = document.getElementById("friend-name-label");
+    const friendCircle = document.getElementById("friend-avatar-circle");
+
+    if (friendLabel && friendCircle) {
+        const params = new URLSearchParams(window.location.search);
+        const friendName = params.get('friend') || "Friend";
+        
+        friendLabel.innerText = friendName;
+        friendCircle.innerText = friendName.charAt(0).toUpperCase();
+    }
+});
