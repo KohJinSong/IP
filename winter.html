@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Winter Forest</title>
+    <link rel="stylesheet" href="style.css"> 
+    <script src="https://kit.fontawesome.com/65a93d52da.js" crossorigin="anonymous"></script>
+    <style>
+        .position-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #A3C9E2; 
+        }
+        .forest-container { flex: 1; perspective: 1200px; display: flex; justify-content: center; align-items: center; padding-top: -50px; }
+        .forest-grid {
+            position: relative; width: 360px; height: 360px; display: grid;
+            grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
+            gap: 10px; transform: rotateX(60deg) rotateZ(-45deg); transform-style: preserve-3d;
+        }
+        .grid-slot { background: rgba(255, 255, 255, 0.4); border-radius: 4px; position: relative; transform-style: preserve-3d; }
+        .tree-container {
+            position: absolute; bottom: 40%; left: 30%; width: 100px; height: 140px; 
+            margin-left: -50px; background-size: contain; background-repeat: no-repeat;
+            background-position: bottom center;
+            transform: rotateZ(45deg) rotateX(-90deg) scale(1.2);
+            transform-origin: bottom center;
+            pointer-events: none;
+        }
+        .page-title { position: absolute; color: #FFFFFF; margin-top: 20px; font-family: sans-serif; letter-spacing: 4px; }
+        .top-nav { position: absolute; left: 20px; top: 20px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <header class="top-nav">
+        <a href="index.html"><span class="fa-solid fa-chevron-left"></span></a>
+    </header>
+    <main class="position-page">
+        <h1 class="page-title">WINTER</h1>
+        <div class="forest-container">
+            <div class="forest-grid" id="place-grid"></div>
+        </div>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.getElementById('place-grid');
+    // grids
+    for (let i = 0; i < 16; i++) {
+        const slot = document.createElement('div');
+        slot.classList.add('grid-slot');
+        slot.id = `slot-${i}`;
+        grid.appendChild(slot);
+    }
+
+    // read season from URL
+    const currentPageSeason = window.location.pathname.split('/').pop().split('.')[0];
+
+    // read all planted trees
+    const allTrees = JSON.parse(localStorage.getItem('allPlantedTrees')) || [];
+
+    // loop and render trees of current season
+    allTrees.forEach(treeData => {
+        if (treeData.season === currentPageSeason) {
+            const targetSlot = document.getElementById(`slot-${treeData.pos}`);
+            if (targetSlot) {
+                const tree = document.createElement('div');
+                tree.className = 'tree-container';
+                // makesure image path is correct
+                tree.style.backgroundImage = `url('image/${currentPageSeason}_tree.png')`;
+                targetSlot.appendChild(tree);
+            }
+        }
+    });
+});
+    </script>
+</body>
+</html>
